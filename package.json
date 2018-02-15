@@ -1,0 +1,11 @@
+{
+  "name": "sampah-daur-ulang",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "dwihujianto@tonjoo.com",
+  "license": "MIT"
+}
