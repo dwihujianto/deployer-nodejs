@@ -1,9 +1,13 @@
 const express = require('express')
 const cmd = require('node-cmd')
 const redis = require('redis')
+const bodyParser = require('body-parser')
 
 const app = express()
 const client = redis.createClient()
+
+app.use(bodyParser.urlencoded({extended: false}))
+app.use(bodyParser.json())
 
 app.use('/autodeploy',(req,res,next) => {
 	let token = req.get('X-Gitlab-Token')
@@ -17,19 +21,48 @@ app.use('/autodeploy',(req,res,next) => {
 	})
 })
 
-app.post('/autodeploy', (req,res) => {
-	
-	let command = `
-		pwd
-		ls
-	`
-	
-	cmd.get(command, (err, data, stderr) => {
-		if(err) console.error('Waduh ', err)
+app.get('/keys', (req,res) => {
+	client.keys("*", (err, results) => {
+		res.json(results)
+	})
+})
+
+app.post('/commands', (req, res) => {
+	let redisKey = req.body.key
+	let redisField = 'command'
+	let redisValue = req.body.command
+
+	client.hset(redisKey,redisField,redisValue, (err) => {
+		if(err) {
+			res.send("Failed to save new command")
+		} else {
+			res.send("Command saved")
+		}
+	})
+})
+
+app.get('/commands/:key', (req, res) => {
+	client.hget(req.params['key'],'command',(err, result) => {
+		res.json(result)
+	})
+})
+
+app.post('/autodeploy', async (req,res) => {
+
+	await client.hget(req.get('X-Gitlab-Token'),'command', (err, result) => {
+		if(err) console.error('Asem tenan', err)
+		let command = result
 		
-		res.send(data)
+		cmd.get(command, (err, data, stderr) => {
+			if(err) {
+				res.send('Command ente is kliru gan...')
+			} else {
+				res.send(data)
+			}
+		})
+
 	})
 
 })
 
-app.listen(1234,() => console.log('port 1234'))
+app.listen(1234,() => console.log('http://127.0.0.1:1234'))
